@@ -1,2 +1,57 @@
+pipeline {
+    agent any
 
-pipeline { agent any environment { IMAGE_NAME = 'urdubol-app' CONTAINER_NAME = 'urdubol-container' HOST_PORT = '8000' APP_PORT = '8080' } stages { stage('Checkout Code') { steps { echo 'Pulling latest code from GitHub...' checkout scm } } stage('Build Docker Image') { steps { script { echo "Building Docker image: ${IMAGE_NAME}:${env.BUILD_ID}..." sh "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} -t ${IMAGE_NAME}:latest ." } } } stage('Test Image') { steps { script { echo 'Testing Docker container execution...' sh "docker run --rm ${IMAGE_NAME}:latest python3 --version || true" } } } stage('Deploy Application') { steps { script { echo 'Deploying UrduBol container...' sh "docker stop ${CONTAINER_NAME} || true" sh "docker rm ${CONTAINER_NAME} || true" sh "docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${APP_PORT} ${IMAGE_NAME}:latest" } } } } post { success { echo 'UrduBol application successfully built and deployed!' } failure { echo 'Pipeline failed. Check Jenkins build logs for details.' } } }
+    environment {
+        IMAGE_NAME     = 'urdubol-app'
+        CONTAINER_NAME = 'urdubol-container'
+        HOST_PORT      = '8000'
+        APP_PORT       = '8080'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo 'Pulling latest code from GitHub...'
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "Building Docker image: ${IMAGE_NAME}:${env.BUILD_ID}..."
+                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} -t ${IMAGE_NAME}:latest ."
+                }
+            }
+        }
+
+        stage('Test Image') {
+            steps {
+                script {
+                    echo 'Testing Docker container execution...'
+                    sh "docker run --rm ${IMAGE_NAME}:latest python3 --version || true"
+                }
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                script {
+                    echo 'Deploying UrduBol container...'
+                    sh "docker stop ${CONTAINER_NAME} || true"
+                    sh "docker rm ${CONTAINER_NAME} || true"
+                    sh "docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${APP_PORT} ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'UrduBol application successfully built and deployed!'
+        }
+        failure {
+            echo 'Pipeline failed. Check Jenkins build logs for details.'
+        }
+    }
+}
